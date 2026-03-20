@@ -1,0 +1,8 @@
+https://www.tiktok.com/t/ZP8b5JUwB/ git clone https://github.com/mysterecode/tiktok-automation-bot.git pip install -r requirements.txt python main.py from seleniumbase import Driver
+from social_media import tiktok
+
+driver = Driver(uc=True)
+driver.maximize_window()
+
+# Run the bot
+run_bot()
