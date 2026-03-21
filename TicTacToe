@@ -1,8 +1,15 @@
-https://www.tiktok.com/t/ZP8b5JUwB/ git clone https://github.com/mysterecode/tiktok-automation-bot.git pip install -r requirements.txt python main.py from seleniumbase import Driver
+from seleniumbase import Driver
 from social_media import tiktok
 
-driver = Driver(uc=True)
+# UC=True enables "Undetected Mode" to help bypass TikTok's bot detection
+driver = Driver(uc=True) 
 driver.maximize_window()
 
-# Run the bot
+# This is the function that handles the automation logic (login, comment, upload)
+# Make sure you have imported or defined run_bot()
+def run_bot():
+    # Typically, you'd call functions from the 'tiktok' module here
+    tiktok.login(driver)
+    # Add other actions like tiktok.upload_video(driver, "path/to/video.mp4")
+    
 run_bot()
