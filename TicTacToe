@@ -1,33 +1,34 @@
-import random
+limport random
 import time
 from seleniumbase import Driver
 
-# UC=True is great, but adding a specific user-agent makes it "Omnistical"
-driver = Driver(uc=True, agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+# UC=True is vital for TikTok 2026
+driver = Driver(uc=True)
 
-def human_delay(low=2, high=5):
-    """Prevents the 'Pattern Recognition' ban by varying wait times."""
-    time.sleep(random.uniform(low, high))
+def omnistical_delay():
+    """Varies wait times to mimic human hesitation."""
+    time.sleep(random.uniform(1.8, 4.2))
 
-def run_bot():
-    try:
-        # 1. Login (Manual hand-off is safer for the first time)
-        driver.get("https://www.tiktok.com/login")
-        print("Please complete manual login if prompted...")
-        human_delay(10, 15) 
+def post_to_dimithai(video_path, description):
+    driver.get("https://www.tiktok.com/upload")
+    omnistical_delay()
+    
+    # Logic for interacting with the upload frame
+    # Use driver.type() and driver.click() instead of standard selenium
+    # to maintain the 'Undetected' status.
+    driver.type('input[type="file"]', video_path)
+    omnistical_delay()
+    
+    # SEO Optimized for Di.Mi.Thai
+    full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026"
+    driver.type('div[role="textbox"]', full_desc)
+    
+    print(f"Post 'Di.Mi.Thai' logic sequence active. Targeting 100k...")
 
-        # 2. Add organic scrolling before acting
-        # TikTok tracks 'dwell time' before a follow to see if you're a bot
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight/4);")
-        human_delay()
+# Run logic
+# post_to_dimithai("/path/to/ml_video.mp4", "The frequency of 333 in Thai trap.")
 
-        # 3. Execution with randomized intervals
-        # Assuming your 'tiktok' module handles the element clicks:
-        # tiktok.follow_user(driver, username="target_niche_creator")
+
+
         
-        print("Logic sequence executed with human-variance parameters.")
-        
-    finally:
-        # Keep the browser open briefly to finish background telemetry
-        time.sleep(5)
-        driver.quit()
+
