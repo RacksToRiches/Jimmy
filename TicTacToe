@@ -1,33 +1,57 @@
-limport random
+import random
 import time
 from seleniumbase import Driver
 
-# UC=True is vital for TikTok 2026
-driver = Driver(uc=True)
+def omnistical_delay(min_t=2.0, max_t=5.0):
+    """Deep human-mimicking delay."""
+    time.sleep(random.uniform(min_t, max_t))
 
-def omnistical_delay():
-    """Varies wait times to mimic human hesitation."""
-    time.sleep(random.uniform(1.8, 4.2))
-
-def post_to_dimithai(video_path, description):
-    driver.get("https://www.tiktok.com/upload")
-    omnistical_delay()
+def upload_sequence(video_path, description):
+    # Initialize with UC Mode and specialized anti-detection args
+    driver = Driver(uc=True, agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     
-    # Logic for interacting with the upload frame
-    # Use driver.type() and driver.click() instead of standard selenium
-    # to maintain the 'Undetected' status.
-    driver.type('input[type="file"]', video_path)
-    omnistical_delay()
-    
-    # SEO Optimized for Di.Mi.Thai
-    full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026"
-    driver.type('div[role="textbox"]', full_desc)
-    
-    print(f"Post 'Di.Mi.Thai' logic sequence active. Targeting 100k...")
+    try:
+        # 1. Use uc_open_with_reconnect to bypass the initial wall
+        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=4)
+        omnistical_delay(3, 6)
 
-# Run logic
-# post_to_dimithai("/path/to/ml_video.mp4", "The frequency of 333 in Thai trap.")
+        # 2. Upload the file
+        # Note: TikTok often uses a hidden input; driver.choose_file is more robust
+        driver.choose_file('input[type="file"]', video_path)
+        print("Video file injected. Waiting for processing...")
+        omnistical_delay(10, 15) # Processing takes time
 
+        # 3. Enter SEO description
+        full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026"
+        # Using uc_click helps bypass 'click interception' checks
+        driver.uc_click('div[role="textbox"]') 
+        driver.type('div[role="textbox"]', full_desc)
+        
+        omnistical_delay(2, 4)
+        
+        # 4. Final Post (Check for the 'Post' button text or selector)
+        driver.click('button:contains("Post")')
+        print(f"Sequence complete for: {description}")
+        
+    finally:
+        driver.quit()
+
+# --- HOURLY UPDATE LOGIC ---
+def run_eternal_scheduler():
+    while True:
+        current_hour = time.strftime("%H:%M")
+        print(f"[{current_hour}] Starting scheduled upload...")
+        
+        # Example path and dynamic description
+        upload_sequence("video.mp4", f"Frequency check at {current_hour}")
+        
+        # Wait 1 hour (3600 seconds) with a slight jitter so it's not exactly on the dot
+        jitter = random.randint(-60, 300)
+        print(f"Sleeping until next hour (jitter: {jitter}s)...")
+        time.sleep(3600 + jitter)
+
+if __name__ == "__main__":
+    run_eternal_scheduler()
 
 
         
