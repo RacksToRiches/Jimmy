@@ -1,28 +1,33 @@
+import random
+import time
 from seleniumbase import Driver
-from social_media import tiktok
 
-# UC=True enables "Undetected Mode" to help bypass TikTok's bot detection
-driver = Driver(uc=True) 
-driver.maximize_window()
+# UC=True is great, but adding a specific user-agent makes it "Omnistical"
+driver = Driver(uc=True, agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
-# This is the function that handles the automation logic (login, likes, followers, etc.)
-# Make sure you have implemented the missing methods in 'tiktok' module
+def human_delay(low=2, high=5):
+    """Prevents the 'Pattern Recognition' ban by varying wait times."""
+    time.sleep(random.uniform(low, high))
+
 def run_bot():
-    # Login to TikTok
-    tiktok.login(driver)
-    
-    # Add followers functionality
-    tiktok.follow_user(driver, username="example_user")
-    
-    # Add likes functionality
-    tiktok.like_content(driver, content_id="example_content_id")
-    
-    # Add reposting/sharing functionality
-    tiktok.repost_content(driver, content_id="example_content_id")
-    
-    # Example upload
-    tiktok.upload_video(driver, "path/to/video.mp4")
-    
-    print("All actions executed successfully!")
-    
-run_bot()
+    try:
+        # 1. Login (Manual hand-off is safer for the first time)
+        driver.get("https://www.tiktok.com/login")
+        print("Please complete manual login if prompted...")
+        human_delay(10, 15) 
+
+        # 2. Add organic scrolling before acting
+        # TikTok tracks 'dwell time' before a follow to see if you're a bot
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight/4);")
+        human_delay()
+
+        # 3. Execution with randomized intervals
+        # Assuming your 'tiktok' module handles the element clicks:
+        # tiktok.follow_user(driver, username="target_niche_creator")
+        
+        print("Logic sequence executed with human-variance parameters.")
+        
+    finally:
+        # Keep the browser open briefly to finish background telemetry
+        time.sleep(5)
+        driver.quit()
