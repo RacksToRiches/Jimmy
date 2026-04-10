@@ -3,67 +3,78 @@ import time
 from seleniumbase import Driver
 
 def omnistical_delay(min_t=3.0, max_t=7.0):
-    """Slightly longer, randomized delays to mimic human hesitation."""
+    """Mimic human hesitation with Gaussian-ish distribution."""
     time.sleep(random.uniform(min_t, max_t))
 
 def upload_sequence(video_path, description):
-    # FIX 1: Use 'incognito=True' to prevent session leak and 'multi_proxy' if scaling
-    # Replaced 'agent' with a more recent 2026-standard UA
-    driver = Driver(uc=True, incognito=True)
+    # Incognito is key, but adding a specific window size helps bypass layout checks
+    driver = Driver(uc=True, incognito=True, browser="chrome")
+    driver.set_window_size(1920, 1080)
     
     try:
-        # FIX 2: UC Reconnect with longer buffer for TikTok's 2026 scripts
-        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=6)
-        omnistical_delay(5, 8)
+        print("Initiating UC Session...")
+        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=7)
+        omnistical_delay(6, 10)
 
-        # FIX 3: TikTok often uses a drop-zone or hidden input. 
-        # Using wait_for_element_present before injection ensures the DOM is ready.
-        driver.wait_for_element_present('input[type="file"]', timeout=20)
-        driver.choose_file('input[type="file"]', video_path)
-        print("Video file injected. Processing...")
+        # Handle potential login popups or overlays if session isn't saved
+        # Note: For production, you'd likely want to load a specific user_data_dir
         
-        # Processing wait depends on file size; 20s is safer for 2026 HD uploads
-        omnistical_delay(15, 25) 
+        driver.wait_for_element_present('input[type="file"]', timeout=30)
+        driver.choose_file('input[type="file"]', video_path)
+        print("Payload delivered. Waiting for server-side processing...")
+        
+        # 2026 HD uploads take time; wait for the 'Edit' or 'Replace' button to appear 
+        # which signals the video is fully processed.
+        driver.wait_for_element_visible('div[class*="video-check"]', timeout=45)
 
-        # FIX 4: Use 'uc_click' followed by 'send_keys' with a slow delay
-        full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
+        # Content Strategy: Including #Indie108
+        full_desc = f"{description} #Indie108 #DiMiThai #Omnism #ThaiMusic2026 #Jaytdnd"
         textbox_selector = 'div[role="textbox"]'
         
         driver.uc_click(textbox_selector)
-        # Slow typing to mimic human speed (0.05s to 0.15s per char)
+        
+        # Human-like typing with occasional "mistake" backspaces could be added here,
+        # but a simple variable delay is usually enough for now.
         for char in full_desc:
             driver.send_keys(textbox_selector, char)
-            time.sleep(random.uniform(0.05, 0.15))
+            time.sleep(random.uniform(0.04, 0.12))
         
-        omnistical_delay(4, 6)
+        omnistical_delay(3, 5)
         
-        # FIX 5: Scroll to the button first (avoids "element not interactable" errors)
+        # Scroll and Post
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        driver.uc_click('button:contains("Post")')
+        # Using a more robust selector for the Post button
+        post_btn = 'button[data-e2e="post_video_button"]'
+        driver.wait_for_element_clickable(post_btn, timeout=10)
+        driver.uc_click(post_btn)
         
-        print(f"Post successful for: {description}")
-        omnistical_delay(5, 10) # Wait to ensure the post request finishes
+        print(f"✨ Successfully boosted Indie108: {description}")
+        omnistical_delay(8, 12) 
         
     except Exception as e:
-        print(f"Error encountered: {e}")
+        print(f"⚠️ Omnistical system error: {e}")
     finally:
         driver.quit()
 
 def run_eternal_scheduler():
     while True:
-        current_hour = time.strftime("%H:%M")
-        print(f"[{current_hour}] Cycle Start.")
-        # Ensure 'video.mp4' is the absolute path for reliability
-        upload_sequence("./video.mp4", f"Elevating frequency: {current_hour}")
+        current_time = time.strftime("%H:%M:%S")
+        print(f"[{current_time}] Cycle Start.")
         
-        # Jittered hour sleep
-        sleep_time = 3600 + random.randint(-180, 600)
-        print(f"Next cycle in {sleep_time // 60} minutes...")
+        # Suggestion: Rotate descriptions to avoid 'spam' detection
+        descs = [
+            "Elevating the frequency.",
+            "Indie108 vibration check.",
+            "The sound of 2026.",
+            "Omnism in every beat."
+        ]
+        
+        upload_sequence("./video.mp4", random.choice(descs))
+        
+        # Jittered interval (approx 1 hour)
+        sleep_time = 3600 + random.randint(-300, 900)
+        print(f"Next pulse in {sleep_time // 60} minutes...")
         time.sleep(sleep_time)
 
 if __name__ == "__main__":
     run_eternal_scheduler()
-
-
-        
-
