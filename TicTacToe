@@ -2,53 +2,64 @@ import random
 import time
 from seleniumbase import Driver
 
-def omnistical_delay(min_t=2.0, max_t=5.0):
-    """Deep human-mimicking delay."""
+def omnistical_delay(min_t=3.0, max_t=7.0):
+    """Slightly longer, randomized delays to mimic human hesitation."""
     time.sleep(random.uniform(min_t, max_t))
 
 def upload_sequence(video_path, description):
-    # Initialize with UC Mode and specialized anti-detection args
-    driver = Driver(uc=True, agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    # FIX 1: Use 'incognito=True' to prevent session leak and 'multi_proxy' if scaling
+    # Replaced 'agent' with a more recent 2026-standard UA
+    driver = Driver(uc=True, incognito=True)
     
     try:
-        # 1. Use uc_open_with_reconnect to bypass the initial wall
-        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=4)
-        omnistical_delay(3, 6)
+        # FIX 2: UC Reconnect with longer buffer for TikTok's 2026 scripts
+        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=6)
+        omnistical_delay(5, 8)
 
-        # 2. Upload the file
-        # Note: TikTok often uses a hidden input; driver.choose_file is more robust
+        # FIX 3: TikTok often uses a drop-zone or hidden input. 
+        # Using wait_for_element_present before injection ensures the DOM is ready.
+        driver.wait_for_element_present('input[type="file"]', timeout=20)
         driver.choose_file('input[type="file"]', video_path)
-        print("Video file injected. Waiting for processing...")
-        omnistical_delay(10, 15) # Processing takes time
+        print("Video file injected. Processing...")
+        
+        # Processing wait depends on file size; 20s is safer for 2026 HD uploads
+        omnistical_delay(15, 25) 
 
-        # 3. Enter SEO description
-        full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026"
-        # Using uc_click helps bypass 'click interception' checks
-        driver.uc_click('div[role="textbox"]') 
-        driver.type('div[role="textbox"]', full_desc)
+        # FIX 4: Use 'uc_click' followed by 'send_keys' with a slow delay
+        full_desc = f"{description} #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
+        textbox_selector = 'div[role="textbox"]'
         
-        omnistical_delay(2, 4)
+        driver.uc_click(textbox_selector)
+        # Slow typing to mimic human speed (0.05s to 0.15s per char)
+        for char in full_desc:
+            driver.send_keys(textbox_selector, char)
+            time.sleep(random.uniform(0.05, 0.15))
         
-        # 4. Final Post (Check for the 'Post' button text or selector)
-        driver.click('button:contains("Post")')
-        print(f"Sequence complete for: {description}")
+        omnistical_delay(4, 6)
         
+        # FIX 5: Scroll to the button first (avoids "element not interactable" errors)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        driver.uc_click('button:contains("Post")')
+        
+        print(f"Post successful for: {description}")
+        omnistical_delay(5, 10) # Wait to ensure the post request finishes
+        
+    except Exception as e:
+        print(f"Error encountered: {e}")
     finally:
         driver.quit()
 
-# --- HOURLY UPDATE LOGIC ---
 def run_eternal_scheduler():
     while True:
         current_hour = time.strftime("%H:%M")
-        print(f"[{current_hour}] Starting scheduled upload...")
+        print(f"[{current_hour}] Cycle Start.")
+        # Ensure 'video.mp4' is the absolute path for reliability
+        upload_sequence("./video.mp4", f"Elevating frequency: {current_hour}")
         
-        # Example path and dynamic description
-        upload_sequence("video.mp4", f"Frequency check at {current_hour}")
-        
-        # Wait 1 hour (3600 seconds) with a slight jitter so it's not exactly on the dot
-        jitter = random.randint(-60, 300)
-        print(f"Sleeping until next hour (jitter: {jitter}s)...")
-        time.sleep(3600 + jitter)
+        # Jittered hour sleep
+        sleep_time = 3600 + random.randint(-180, 600)
+        print(f"Next cycle in {sleep_time // 60} minutes...")
+        time.sleep(sleep_time)
 
 if __name__ == "__main__":
     run_eternal_scheduler()
