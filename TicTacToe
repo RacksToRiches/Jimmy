@@ -3,77 +3,80 @@ import time
 from seleniumbase import Driver
 
 def omnistical_delay(min_t=3.0, max_t=7.0):
-    """Mimic human hesitation with Gaussian-ish distribution."""
+    """Randomized delay to mimic human behavior."""
     time.sleep(random.uniform(min_t, max_t))
 
 def upload_sequence(video_path, description):
-    # Incognito is key, but adding a specific window size helps bypass layout checks
-    driver = Driver(uc=True, incognito=True, browser="chrome")
+    # Switching to a persistent profile is safer for 'Kalki' branding
+    # Replace 'kalki_profile' with a folder path to save your login session
+    driver = Driver(uc=True, user_data_dir="./kalki_session", browser="chrome")
     driver.set_window_size(1920, 1080)
     
     try:
-        print("Initiating UC Session...")
-        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=7)
-        omnistical_delay(6, 10)
+        print("🌀 Awakening Kalki session...")
+        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=8)
+        omnistical_delay(7, 12)
 
-        # Handle potential login popups or overlays if session isn't saved
-        # Note: For production, you'd likely want to load a specific user_data_dir
-        
+        # Ensure we are on the upload page and not a login redirect
+        if "login" in driver.current_url:
+            print("Action Required: Please log in manually in the browser window.")
+            # Increased wait for manual login if session expired
+            driver.wait_for_element_present('input[type="file"]', timeout=120)
+
+        # File Injection
         driver.wait_for_element_present('input[type="file"]', timeout=30)
         driver.choose_file('input[type="file"]', video_path)
-        print("Payload delivered. Waiting for server-side processing...")
+        print("Payload delivered. Processing video...")
         
-        # 2026 HD uploads take time; wait for the 'Edit' or 'Replace' button to appear 
-        # which signals the video is fully processed.
-        driver.wait_for_element_visible('div[class*="video-check"]', timeout=45)
+        # Wait for the processing indicator to vanish or the 'Post' button to enable
+        driver.wait_for_element_visible('div[role="textbox"]', timeout=60)
+        omnistical_delay(10, 15)
 
-        # Content Strategy: Including #Indie108
-        full_desc = f"{description} #Indie108 #DiMiThai #Omnism #ThaiMusic2026 #Jaytdnd"
+        # Description with Kalki focus
+        full_desc = f"{description} #Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
         textbox_selector = 'div[role="textbox"]'
         
         driver.uc_click(textbox_selector)
         
-        # Human-like typing with occasional "mistake" backspaces could be added here,
-        # but a simple variable delay is usually enough for now.
+        # Human-speed typing
         for char in full_desc:
             driver.send_keys(textbox_selector, char)
-            time.sleep(random.uniform(0.04, 0.12))
+            time.sleep(random.uniform(0.06, 0.14))
         
-        omnistical_delay(3, 5)
+        omnistical_delay(4, 8)
         
-        # Scroll and Post
+        # Final Execution
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        # Using a more robust selector for the Post button
         post_btn = 'button[data-e2e="post_video_button"]'
-        driver.wait_for_element_clickable(post_btn, timeout=10)
+        
+        # Ensuring the button is actually clickable (TikTok sometimes disables it during processing)
+        driver.wait_for_element_clickable(post_btn, timeout=20)
         driver.uc_click(post_btn)
         
-        print(f"✨ Successfully boosted Indie108: {description}")
-        omnistical_delay(8, 12) 
+        print(f"🔥 Deployment Successful: {description}")
+        
+        # Post-upload 'Human' behavior: Browse for a bit
+        omnistical_delay(10, 15)
+        driver.get("https://www.tiktok.com/foryou")
+        time.sleep(random.randint(30, 60))
         
     except Exception as e:
-        print(f"⚠️ Omnistical system error: {e}")
+        print(f"❌ System failure in Kalki sequence: {e}")
     finally:
         driver.quit()
 
 def run_eternal_scheduler():
     while True:
-        current_time = time.strftime("%H:%M:%S")
-        print(f"[{current_time}] Cycle Start.")
+        current_hour = time.strftime("%H:%M")
+        print(f"[{current_hour}] Kalki Cycle Initiated.")
         
-        # Suggestion: Rotate descriptions to avoid 'spam' detection
-        descs = [
-            "Elevating the frequency.",
-            "Indie108 vibration check.",
-            "The sound of 2026.",
-            "Omnism in every beat."
-        ]
+        # Ensure your video file path is correct
+        upload_sequence("./video.mp4", f"Kalki frequency shift at {current_hour}")
         
-        upload_sequence("./video.mp4", random.choice(descs))
-        
-        # Jittered interval (approx 1 hour)
-        sleep_time = 3600 + random.randint(-300, 900)
-        print(f"Next pulse in {sleep_time // 60} minutes...")
+        # Randomized interval to break the 'hourly' pattern
+        # 3600s +/- 15 minutes
+        sleep_time = random.randint(2700, 4500)
+        print(f"Dormant for {sleep_time // 60} minutes until next shift...")
         time.sleep(sleep_time)
 
 if __name__ == "__main__":
