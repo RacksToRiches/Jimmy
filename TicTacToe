@@ -81,3 +81,47 @@ def run_eternal_scheduler():
 
 if __name__ == "__main__":
     run_eternal_scheduler()
+
+import requests
+
+def get_etherscan_balance(api_key, wallet_address, chain_id=1):
+    """
+    Fetches the Ether balance for an address using Etherscan v2 API.
+    Default chain_id is 1 (Ethereum Mainnet).
+    """
+    # The v2 endpoint
+    url = "https://api.etherscan.io/v2/api"
+    
+    # Define parameters (chainid is MANDATORY for v2)
+    params = {
+        "chainid": chain_id,      # The missing parameter you need
+        "module": "account",
+        "action": "balance",
+        "address": wallet_address,
+        "tag": "latest",
+        "apikey": api_key
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+        
+        if data['status'] == '1':
+            # Balance is returned in Wei
+            balance_wei = int(data['result'])
+            balance_eth = balance_wei / 10**18
+            return f"Balance: {balance_eth} ETH"
+        else:
+            return f"API Error: {data['message']} - {data.get('result', '')}"
+            
+    except Exception as e:
+        return f"Connection Error: {e}"
+
+# --- Configuration ---
+API_KEY = "YOUR_ETHERSCAN_API_KEY"
+ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe" # Example Ethereum Foundation address
+
+# Run the function
+result = get_etherscan_balance(API_KEY, ADDRESS)
+print(result)
+
