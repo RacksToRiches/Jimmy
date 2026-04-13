@@ -1,127 +1,200 @@
 import random
 import time
+import requests
 from seleniumbase import Driver
 
+# ====================== CONFIG ======================
+VIDEO_PATH = "./video.mp4"  # Change to your actual video file
+TIKTOK_SESSION_DIR = "./kalki_session"  # Persistent login folder
+
+# Etherscan Config
+ETHERSCAN_API_KEY = "YOUR_ETHERSCAN_API_KEY_HERE"  # Get free key from etherscan.io
+WALLET_ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"  # Example: Ethereum Foundation
+
+# Hashtags & Branding
+HASHTAGS = "#Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
+
+# ===================================================
+
 def omnistical_delay(min_t=3.0, max_t=7.0):
-    """Randomized delay to mimic human behavior."""
+    """Randomized human-like delay."""
     time.sleep(random.uniform(min_t, max_t))
 
 def upload_sequence(video_path, description):
-    # Switching to a persistent profile is safer for 'Kalki' branding
-    # Replace 'kalki_profile' with a folder path to save your login session
-    driver = Driver(uc=True, user_data_dir="./kalki_session", browser="chrome")
+    print("🌀 Starting Kalki TikTok Upload Sequence...")
+    
+    driver = Driver(
+        uc=True,                    # Undetected Chrome mode (best for 2026 anti-detection)
+        user_data_dir=TIKTOK_SESSION_DIR,
+        browser="chrome"
+    )
     driver.set_window_size(1920, 1080)
     
     try:
-        print("🌀 Awakening Kalki session...")
         driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=8)
-        omnistical_delay(7, 12)
+        omnistical_delay(8, 14)
 
-        # Ensure we are on the upload page and not a login redirect
-        if "login" in driver.current_url:
-            print("Action Required: Please log in manually in the browser window.")
-            # Increased wait for manual login if session expired
-            driver.wait_for_element_present('input[type="file"]', timeout=120)
+        # Manual login fallback if needed
+        if "login" in driver.current_url.lower():
+            print("⚠️  Login required. Please log in manually in the opened browser window.")
+            driver.wait_for_element_present('input[type="file"]', timeout=180)
 
-        # File Injection
-        driver.wait_for_element_present('input[type="file"]', timeout=30)
+        # File upload
+        driver.wait_for_element_present('input[type="file"]', timeout=45)
         driver.choose_file('input[type="file"]', video_path)
-        print("Payload delivered. Processing video...")
+        print("✅ Video file injected. Processing...")
         
-        # Wait for the processing indicator to vanish or the 'Post' button to enable
-        driver.wait_for_element_visible('div[role="textbox"]', timeout=60)
-        omnistical_delay(10, 15)
+        # Wait for description box
+        driver.wait_for_element_visible('div[role="textbox"]', timeout=90)
+        omnistical_delay(12, 18)
 
-        # Description with Kalki focus
-        full_desc = f"{description} #Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
-        textbox_selector = 'div[role="textbox"]'
+        # Fill description with human typing simulation
+        full_desc = f"{description} {HASHTAGS}"
+        textbox = 'div[role="textbox"]'
         
-        driver.uc_click(textbox_selector)
-        
-        # Human-speed typing
+        driver.uc_click(textbox)
         for char in full_desc:
-            driver.send_keys(textbox_selector, char)
-            time.sleep(random.uniform(0.06, 0.14))
-        
-        omnistical_delay(4, 8)
-        
-        # Final Execution
+            driver.send_keys(textbox, char)
+            time.sleep(random.uniform(0.05, 0.13))  # Natural typing speed
+
+        omnistical_delay(5, 10)
+
+        # Scroll and post
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         post_btn = 'button[data-e2e="post_video_button"]'
         
-        # Ensuring the button is actually clickable (TikTok sometimes disables it during processing)
-        driver.wait_for_element_clickable(post_btn, timeout=20)
+        driver.wait_for_element_clickable(post_btn, timeout=30)
         driver.uc_click(post_btn)
         
-        print(f"🔥 Deployment Successful: {description}")
+        print(f"🚀 Upload Successful: {description}")
         
-        # Post-upload 'Human' behavior: Browse for a bit
-        omnistical_delay(10, 15)
+        # Post-upload human behavior
+        omnistical_delay(12, 20)
         driver.get("https://www.tiktok.com/foryou")
-        time.sleep(random.randint(30, 60))
+        time.sleep(random.randint(40, 90))
         
     except Exception as e:
-        print(f"❌ System failure in Kalki sequence: {e}")
+        print(f"❌ Upload failed: {e}")
     finally:
         driver.quit()
 
-def run_eternal_scheduler():
-    while True:
-        current_hour = time.strftime("%H:%M")
-        print(f"[{current_hour}] Kalki Cycle Initiated.")
-        
-        # Ensure your video file path is correct
-        upload_sequence("./video.mp4", f"Kalki frequency shift at {current_hour}")
-        
-        # Randomized interval to break the 'hourly' pattern
-        # 3600s +/- 15 minutes
-        sleep_time = random.randint(2700, 4500)
-        print(f"Dormant for {sleep_time // 60} minutes until next shift...")
-        time.sleep(sleep_time)
-
-if __name__ == "__main__":
-    run_eternal_scheduler()
-
-import requests
-
 def get_etherscan_balance(api_key, wallet_address, chain_id=1):
-    """
-    Fetches the Ether balance for an address using Etherscan v2 API.
-    Default chain_id is 1 (Ethereum Mainnet).
-    """
-    # The v2 endpoint
+    """Fetch native balance using Etherscan V2 API (2026)."""
     url = "https://api.etherscan.io/v2/api"
     
-    # Define parameters (chainid is MANDATORY for v2)
     params = {
-        "chainid": chain_id,      # The missing parameter you need
+        "chainid": chain_id,
         "module": "account",
         "action": "balance",
         "address": wallet_address,
         "tag": "latest",
         "apikey": api_key
     }
-
+    
     try:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=15)
         data = response.json()
         
-        if data['status'] == '1':
-            # Balance is returned in Wei
+        if data.get('status') == '1':
             balance_wei = int(data['result'])
-            balance_eth = balance_wei / 10**18
-            return f"Balance: {balance_eth} ETH"
+            balance_eth = balance_wei / 1e18
+            return f"✅ Balance on chain {chain_id}: {balance_eth:.6f} ETH"
         else:
-            return f"API Error: {data['message']} - {data.get('result', '')}"
+            return f"❌ API Error: {data.get('message')} | Result: {data.get('result')}"
             
     except Exception as e:
-        return f"Connection Error: {e}"
+        return f"❌ Connection Error: {e}"
 
-# --- Configuration ---
-API_KEY = "YOUR_ETHERSCAN_API_KEY"
-ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe" # Example Ethereum Foundation address
+def run_eternal_scheduler():
+    print("🌌 Eternal Kalki Scheduler Started...")
+    while True:
+        current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{current_time}] Initiating next cycle...")
+        
+        description = f"Kalki frequency shift • {time.strftime('%H:%M')} UTC"
+        upload_sequence(VIDEO_PATH, description)
+        
+        # Random sleep between ~45min to ~75min (breaks predictable pattern)
+        sleep_time = random.randint(2700, 4500)
+        print(f"💤 Dormant for {sleep_time // 60} minutes...")
+        time.sleep(sleep_time)
 
-# Run the function
-result = get_etherscan_balance(API_KEY, ADDRESS)
-print(result)
+# ====================== ETHERSCAN EXAMPLE ======================
+if __name__ == "__main__":
+    # Example: Check wallet balance
+    print("\n🔍 Checking Etherscan Balance...")
+    result = get_etherscan_balance(ETHERSCAN_API_KEY, WALLET_ADDRESS, chain_id=1)
+    print(result)
+    
+    # Uncomment to start the scheduler
+    # run_eternal_scheduler()
 
+# ====================== SQL SECTION (Run in your DB) ======================
+"""
+-- Finalized Streamer Stats Table + Data + Queries
+
+CREATE TABLE IF NOT EXISTS streamer_stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    streamer_name VARCHAR(100) NOT NULL,
+    game_title VARCHAR(150),
+    stream_date DATE,
+    stream_duration_hours DECIMAL(6,2),
+    avg_viewers INT,
+    peak_viewers INT,
+    hours_watched BIGINT,
+    followers_gained INT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert Lacy (realistic April 2026 stats ~15k avg viewers)
+INSERT INTO streamer_stats 
+    (streamer_name, game_title, stream_date, stream_duration_hours, avg_viewers, peak_viewers, hours_watched, followers_gained, notes)
+VALUES
+    ('Lacy', 'Coachella + Celebrity Stream', '2026-04-11', 4.08, 28264, 36459, 115300, 2365, 'High engagement'),
+    ('Lacy', 'Celebrity Golf (Flu Game)', '2026-04-09', 6.00, 15569, 20566, 93414, 2095, '$100k event'),
+    ('Lacy', 'Gambling + Setup Fix', '2026-04-07', 5.17, 13490, 18479, 69743, 1506, 'Short IRL stream'),
+    ('Lacy', 'NCAA Watch Party', '2026-04-06', 8.20, 17790, 25003, 122705, 2241, 'Sports + betting');
+
+-- Insert Jimmy Minh Tai Thai (DiMiThai) - small streamer
+INSERT INTO streamer_stats 
+    (streamer_name, game_title, stream_date, stream_duration_hours, avg_viewers, peak_viewers, hours_watched, followers_gained, notes)
+VALUES
+    ('Jimmy Minh Tai Thai', 'League of Legends Ranked', '2026-04-10', 4.50, 28, 45, 126, 12, 'Ranked grind'),
+    ('Jimmy Minh Tai Thai', 'Age of Mythology', '2026-04-08', 3.75, 19, 32, 71, 8, 'RTS throwback'),
+    ('Jimmy Minh Tai Thai', 'NBA 2K16 Nostalgia', '2026-04-05', 5.20, 12, 24, 62, 5, 'Old game stream'),
+    ('Jimmy Minh Tai Thai', 'Just Chatting + Variety', '2026-04-11', 2.80, 35, 52, 98, 18, 'Chill session');
+
+-- 30-Day Averages
+INSERT INTO streamer_stats 
+    (streamer_name, game_title, stream_date, stream_duration_hours, avg_viewers, peak_viewers, hours_watched, followers_gained, notes)
+VALUES
+    ('Lacy', '30-Day Average', '2026-04-01', 8.73, 15338, 37506, 3017754, 57772, '~196 hours streamed'),
+    ('Jimmy Minh Tai Thai', '30-Day Average', '2026-04-01', 6.10, 24, 41, 14640, 285, 'Consistent small community');
+
+-- Useful Queries (copy-paste as needed)
+SELECT * FROM streamer_stats ORDER BY streamer_name, stream_date DESC;
+
+-- Comparison
+SELECT 
+    streamer_name,
+    COUNT(*) AS total_streams,
+    ROUND(AVG(avg_viewers), 0) AS avg_viewers,
+    MAX(peak_viewers) AS highest_peak,
+    SUM(hours_watched) AS total_hours_watched,
+    SUM(followers_gained) AS total_followers_gained
+FROM streamer_stats 
+WHERE streamer_name IN ('Lacy', 'Jimmy Minh Tai Thai')
+GROUP BY streamer_name
+ORDER BY avg_viewers DESC;
+
+-- Window Function Analysis
+SELECT 
+    streamer_name,
+    game_title,
+    avg_viewers,
+    AVG(avg_viewers) OVER (PARTITION BY streamer_name) AS streamer_avg_viewers,
+    MAX(peak_viewers) OVER (PARTITION BY streamer_name) AS streamer_highest_peak
+FROM streamer_stats
+ORDER BY streamer_name, stream_date DESC;
+"""
