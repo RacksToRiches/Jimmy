@@ -2,14 +2,14 @@ import random
 import time
 import requests
 from seleniumbase import Driver
-
+//
 # ====================== CONFIG ======================
 VIDEO_PATH = "./video.mp4" 
 TIKTOK_SESSION_DIR = "./kalki_session"
 ETHERSCAN_API_KEY = "YOUR_ETHERSCAN_API_KEY_HERE"
 WALLET_ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
 HASHTAGS = "#Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
-
+//
 # ===================================================
 
 def get_etherscan_balance(api_key, wallet_address, chain_id=1):
