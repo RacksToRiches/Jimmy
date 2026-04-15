@@ -1,19 +1,23 @@
-import random
-import time
+ import time
 import requests
 from seleniumbase import Driver
-//
+
 # ====================== CONFIG ======================
-VIDEO_PATH = "./video.mp4" 
+VIDEO_PATH = "./video.mp4"
 TIKTOK_SESSION_DIR = "./kalki_session"
-ETHERSCAN_API_KEY = "YOUR_ETHERSCAN_API_KEY_HERE"
+ETHERSCAN_API_KEY = "YOUR_ETHERSCAN_API_KEY_HERE"   # ← Replace with real key
 WALLET_ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
 HASHTAGS = "#Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
-//
+
+# Payment API (example - replace with your actual endpoint if needed)
+API_BASE = "https://api.example-payments.com/v1"
+REFUND_ENDPOINT = f"{API_BASE}/refunds"
+PAYMENT_API_KEY = "REPLACE_WITH_YOUR_API_KEY"       # ← Replace if using
 # ===================================================
 
-def get_etherscan_balance(api_key, wallet_address, chain_id=1):
-    """Fetch native balance using Etherscan V2 API."""
+
+def get_etherscan_balance(api_key: str, wallet_address: str, chain_id: int = 1) -> float | None:
+    """Fetch native ETH balance using Etherscan V2 API."""
     url = "https://api.etherscan.io/v2/api"
     params = {
         "chainid": chain_id,
@@ -23,51 +27,111 @@ def get_etherscan_balance(api_key, wallet_address, chain_id=1):
         "tag": "latest",
         "apikey": api_key
     }
+    
     try:
         response = requests.get(url, params=params, timeout=15)
+        response.raise_for_status()
         data = response.json()
+        
         if data.get('status') == '1':
             return float(data['result']) / 1e18
-        return None
+        else:
+            print(f"⚠️ Etherscan API Error: {data.get('message', 'Unknown error')}")
+            return None
     except Exception as e:
         print(f"⚠️ Balance Check Failed: {e}")
         return None
 
-def upload_to_tiktok(video_path, description):
-    """Automated TikTok upload sequence."""
-    driver = Driver(uc=True, user_data_dir=TIKTOK_SESSION_DIR)
+
+def upload_to_tiktok(video_path: str, description: str):
+    """Automated TikTok video upload using SeleniumBase."""
+    driver = None
     try:
+        print("🌐 Launching browser with existing TikTok session...")
+        driver = Driver(uc=True, user_data_dir=TIKTOK_SESSION_DIR)
+        
         driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=8)
         
-        # Check for login requirement
+        # Handle login if needed
         if "login" in driver.current_url.lower():
-            print("🔑 Manual login required in the browser window...")
+            print("🔑 Login page detected. Please log in manually in the browser window...")
             driver.wait_for_element_present('input[type="file"]', timeout=180)
-
-        # Upload & Metadata
+        
+        print("📤 Uploading video...")
         driver.choose_file('input[type="file"]', video_path)
+        
         driver.wait_for_element_visible('div[role="textbox"]', timeout=60)
         
         full_desc = f"{description} {HASHTAGS}"
         driver.send_keys('div[role="textbox"]', full_desc)
         
-        # Post
-        time.sleep(5) 
+        # Optional: small delay before posting
+        time.sleep(5)
+        
+        print("🚀 Clicking Post button...")
         driver.click('button[data-e2e="post_video_button"]')
-        print(f"🚀 Successfully posted: {description}")
+        
+        print(f"✅ Successfully triggered upload: {description}")
         
     except Exception as e:
         print(f"❌ Upload Error: {e}")
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()
+
+
+def send_refund(transaction_id: str, amount: float, currency: str = "USD"):
+    """Send refund via payment API (placeholder - update endpoint as needed)."""
+    payload = {
+        "transaction_id": transaction_id,
+        "amount": int(round(amount * 100)),  # convert to cents
+        "currency": currency,
+        "reason": "customer_request"
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {PAYMENT_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        resp = requests.post(REFUND_ENDPOINT, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        print("✅ Refund request sent successfully")
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Refund Error: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response: {e.response.text}")
+        return None
+
 
 if __name__ == "__main__":
-    print("🌀 Initializing Kalki System...")
+    print("🌀 Initializing Kalki System...\n")
     
-    # 1. Check Financial Status
+    # 1. Check Ethereum Balance
+    print("💎 Checking wallet balance...")
     balance = get_etherscan_balance(ETHERSCAN_API_KEY, WALLET_ADDRESS)
-    status_msg = f"Balance: {balance} ETH" if balance is not None else "Balance: Unknown"
-    print(f"💎 {status_msg}")
+    
+    if balance is not None:
+        status_msg = f"Balance: {balance:.6f} ETH"
+        print(f"💎 {status_msg}")
+    else:
+        status_msg = "Balance: Unknown"
+        print("⚠️ Could not retrieve balance")
+    
+    # 2. TikTok Upload
+    print("\n🎥 Starting TikTok upload process...")
+    upload_to_tiktok(
+        VIDEO_PATH, 
+        f"Kalki Frequency | {status_msg}"
+    )
+    
+    # 3. Optional: Refund Example (uncomment if needed)
+    # print("\n🔄 Processing refund example...")
+    # refund_response = send_refund("4576018333385356152", 500.0)
+    # if refund_response:
+    #     print("Refund response:", refund_response)
+    
+    print("\n✅ Kalki System run completed.")
 
-    # 2. Trigger Upload
-    upload_to_tiktok(VIDEO_PATH, f"Kalki Frequency | {status_msg}")
