@@ -1,0 +1,110 @@
+# show_tesla_coil_5d.py
+import tkinter as tk
+from tkinter import scrolledtext
+
+ASCII_DIAGRAM = r"""
+Labeled ASCII wiring diagram (top view of 510 connection and mod contacts)
+
+Legend:
+  +  : positive terminal
+  -  : negative terminal (ground)
+  S  : spring or center pin on 510
+  R  : ring/contact on 510
+  B+ : battery positive
+  B- : battery negative
+  SW : internal switch (if present)
+  PCB: mod circuit board
+
+         510 atomizer (female) - top view
+        ______________________________
+       |                              |
+       |          [   S   ]            |   <-- center pin (positive contact) -> connects to mod output (+)
+       |                              |
+       |   [ RING CONTACT ]___________|   <-- outer ring (negative) -> connects to mod ground (-)
+       |                              |
+       |______________________________|
+
+Mod top cap (mating 510) - shows conductor paths:
+
+             Top cap
+         _________________
+        |                 |
+        |  Center Conductor|-------> to PCB -> MOSFET/Output -> B+ (through switch)   (positive output)
+        |                 |
+        |  Insulator      |
+        |                 |
+        |  Outer Shell ---|-------> to PCB ground plane -> B- (negative)
+        |_________________|
+
+Battery (510-threaded / external):
+  Threaded connection:
+    - Positive: protruding center pin on atomizer screws into mod center positive conductor.
+    - Negative: threads/ring make contact with mod outer shell.
+
+Simple wiring flow:
+  Battery B+ ---> mod switch (SW) ---> PCB power input ---> output center conductor ---> atomizer S (positive)
+  Battery B- ---> mod chassis/ground ---> atomizer ring/contact (negative)
+
+Notes:
+- Polarity: center = positive, outer ring = negative.
+- The mod's PCB must have matching traces: B+ and B- to its power stage and output. The 510 center pin often connects to the mod's regulated/unregulated output pad; outer shell connects to ground.
+- Some adjustable mods use a spring or adjustable pin to ensure good contact with differing atomizer pin heights.
+"""
+
+CHECKLIST = """Visual checklist — photos/angles to take (for troubleshooting or fabrication)
+
+1) Top view of 510 female on mod with no atomizer:
+   - Show center pin and outer ring, include a ruler/mm scale.
+
+2) Side view showing thread engagement between battery/atomizer and mod:
+   - Capture how far the center pin protrudes and whether threads contact shell.
+
+3) Underside/top of mod cap showing center conductor path to PCB:
+   - If possible, remove top cap to show the conductor or insulator.
+
+4) PCB close-up showing B+ and B- pads, any switch, and traces to output:
+   - Label B+ pad, B- pad, and output trace.
+
+5) Battery terminal (positive and negative) close-up:
+   - Include measurements of spring thickness or pin length.
+
+6) Full assembly (battery + mod + atomizer) showing fit, wobbles, or gaps.
+"""
+
+SAFETY = """Quick safety reminders
+- Ensure device is powered off and battery removed before disassembly.
+- Confirm polarity before soldering or modifying.
+- Use insulated tools and avoid shorting center to outer shell.
+"""
+
+def create_window():
+    root = tk.Tk()
+    root.title("Tesla Coil 5D — 510 Wiring Diagram & Checklist")
+    root.geometry("900x700")
+
+    # Diagram frame
+    frame1 = tk.LabelFrame(root, text="ASCII Wiring Diagram", padx=8, pady=8)
+    frame1.pack(fill="both", expand=True, padx=8, pady=6)
+
+    txt1 = scrolledtext.ScrolledText(frame1, wrap=tk.NONE, font=("Courier", 10))
+    txt1.pack(fill="both", expand=True)
+    txt1.insert(tk.END, ASCII_DIAGRAM)
+    txt1.configure(state="disabled")
+
+    # Checklist frame
+    frame2 = tk.LabelFrame(root, text="Visual Checklist", padx=8, pady=8)
+    frame2.pack(fill="both", expand=True, padx=8, pady=6)
+
+    txt2 = scrolledtext.ScrolledText(frame2, wrap=tk.WORD, font=("Arial", 11))
+    txt2.pack(fill="both", expand=True)
+    txt2.insert(tk.END, CHECKLIST + "\n\n" + SAFETY)
+    txt2.configure(state="disabled")
+
+    # Close button
+    btn = tk.Button(root, text="Close", command=root.destroy)
+    btn.pack(pady=6)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    create_window()
