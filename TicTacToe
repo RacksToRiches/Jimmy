@@ -1,137 +1,56 @@
- import time
-import requests
-from seleniumbase import Driver
-//
-# ====================== CONFIG ======================
-VIDEO_PATH = "./video.mp4"
-TIKTOK_SESSION_DIR = "./kalki_session"
-ETHERSCAN_API_KEY = "YOUR_ETHERSCAN_API_KEY_HERE"   # ← Replace with real key
-WALLET_ADDRESS = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"
-HASHTAGS = "#Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
+# random_bot.py
+import random
 
-# Payment API (example - replace with your actual endpoint if needed)
-API_BASE = "https://api.example-payments.com/v1"
-REFUND_ENDPOINT = f"{API_BASE}/refunds"
-PAYMENT_API_KEY = "REPLACE_WITH_YOUR_API_KEY"       # ← Replace if using
-# ===================================================
+def single_random(min_val=1, max_val=100):
+    return random.randint(min_val, max_val)
 
+def multiple_random(count, min_val=1, max_val=100, unique=False):
+    if unique:
+        if count > (max_val - min_val + 1):
+            raise ValueError("Count larger than unique values available in range.")
+        return random.sample(range(min_val, max_val+1), count)
+    return [random.randint(min_val, max_val) for _ in range(count)]
 
-def get_etherscan_balance(api_key: str, wallet_address: str, chain_id: int = 1) -> float | None:
-    """Fetch native ETH balance using Etherscan V2 API."""
-    url = "https://api.etherscan.io/v2/api"
-    params = {
-        "chainid": chain_id,
-        "module": "account",
-        "action": "balance",
-        "address": wallet_address,
-        "tag": "latest",
-        "apikey": api_key
-    }
-    
-    try:
-        response = requests.get(url, params=params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
-        
-        if data.get('status') == '1':
-            return float(data['result']) / 1e18
+def main():
+    print("Random Number Bot")
+    while True:
+        print("\nOptions:")
+        print("1) Single random (default 1-100)")
+        print("2) Multiple randoms")
+        print("3) Ranged randoms (generate numbers with step)")
+        print("4) Exit")
+        choice = input("Choose an option: ").strip()
+
+        if choice == "1":
+            print("Single random:", single_random())
+        elif choice == "2":
+            try:
+                c = int(input("Count: ").strip())
+                mn = int(input("Min (default 1): ").strip() or 1)
+                mx = int(input("Max (default 100): ").strip() or 100)
+                uniq = input("Unique? (y/N): ").strip().lower() == "y"
+                nums = multiple_random(c, mn, mx, unique=uniq)
+                print("Randoms:", nums)
+            except Exception as e:
+                print("Error:", e)
+        elif choice == "3":
+            try:
+                mn = int(input("Min: ").strip())
+                mx = int(input("Max: ").strip())
+                step = int(input("Step (default 1): ").strip() or 1)
+                if step == 0:
+                    raise ValueError("Step cannot be 0.")
+                nums = list(range(mn, mx+ (1 if step>0 else -1), step))
+                print("Generated sequence:", nums)
+            except Exception as e:
+                print("Error:", e)
+        elif choice == "4":
+            print("Goodbye.")
+            break
         else:
-            print(f"⚠️ Etherscan API Error: {data.get('message', 'Unknown error')}")
-            return None
-    except Exception as e:
-        print(f"⚠️ Balance Check Failed: {e}")
-        return None
-
-
-def upload_to_tiktok(video_path: str, description: str):
-    """Automated TikTok video upload using SeleniumBase."""
-    driver = None
-    try:
-        print("🌐 Launching browser with existing TikTok session...")
-        driver = Driver(uc=True, user_data_dir=TIKTOK_SESSION_DIR)
-        
-        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=8)
-        
-        # Handle login if needed
-        if "login" in driver.current_url.lower():
-            print("🔑 Login page detected. Please log in manually in the browser window...")
-            driver.wait_for_element_present('input[type="file"]', timeout=180)
-        
-        print("📤 Uploading video...")
-        driver.choose_file('input[type="file"]', video_path)
-        
-        driver.wait_for_element_visible('div[role="textbox"]', timeout=60)
-        
-        full_desc = f"{description} {HASHTAGS}"
-        driver.send_keys('div[role="textbox"]', full_desc)
-        
-        # Optional: small delay before posting
-        time.sleep(5)
-        
-        print("🚀 Clicking Post button...")
-        driver.click('button[data-e2e="post_video_button"]')
-        
-        print(f"✅ Successfully triggered upload: {description}")
-        
-    except Exception as e:
-        print(f"❌ Upload Error: {e}")
-    finally:
-        if driver:
-            driver.quit()
-
-
-def send_refund(transaction_id: str, amount: float, currency: str = "USD"):
-    """Send refund via payment API (placeholder - update endpoint as needed)."""
-    payload = {
-        "transaction_id": transaction_id,
-        "amount": int(round(amount * 100)),  # convert to cents
-        "currency": currency,
-        "reason": "customer_request"
-    }
-    
-    headers = {
-        "Authorization": f"Bearer {PAYMENT_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        resp = requests.post(REFUND_ENDPOINT, json=payload, headers=headers, timeout=10)
-        resp.raise_for_status()
-        print("✅ Refund request sent successfully")
-        return resp.json()
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Refund Error: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            print(f"Response: {e.response.text}")
-        return None
-
+            print("Invalid choice.")
 
 if __name__ == "__main__":
-    print("🌀 Initializing Kalki System...\n")
-    
-    # 1. Check Ethereum Balance
-    print("💎 Checking wallet balance...")
-    balance = get_etherscan_balance(ETHERSCAN_API_KEY, WALLET_ADDRESS)
-    
-    if balance is not None:
-        status_msg = f"Balance: {balance:.6f} ETH"
-        print(f"💎 {status_msg}")
-    else:
-        status_msg = "Balance: Unknown"
-        print("⚠️ Could not retrieve balance")
-    
-    # 2. TikTok Upload
-    print("\n🎥 Starting TikTok upload process...")
-    upload_to_tiktok(
-        VIDEO_PATH, 
-        f"Kalki Frequency | {status_msg}"
-    )
-    
-    # 3. Optional: Refund Example (uncomment if needed)
-    # print("\n🔄 Processing refund example...")
-    # refund_response = send_refund("4576018333385356152", 500.0)
-    # if refund_response:
-    #     print("Refund response:", refund_response)
-    
-    print("\n✅ Kalki System run completed.")
+    main()
+
 
