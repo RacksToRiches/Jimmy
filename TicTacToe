@@ -1,6 +1,23 @@
-# random_bot.py
+# random_bot_full.py
 import random
+import threading
+import argparse
+import json
+from datetime import datetime
+from pathlib import Path
 
+# Optional GUI
+import tkinter as tk
+from tkinter import scrolledtext, simpledialog, messagebox
+
+# FastAPI
+from fastapi import FastAPI
+from pydantic import BaseModel
+import uvicorn
+
+LOG_PATH = Path("random_bot_log.jsonl")
+
+# Core RNG functions
 def single_random(min_val=1, max_val=100):
     return random.randint(min_val, max_val)
 
@@ -11,46 +28,218 @@ def multiple_random(count, min_val=1, max_val=100, unique=False):
         return random.sample(range(min_val, max_val+1), count)
     return [random.randint(min_val, max_val) for _ in range(count)]
 
-def main():
-    print("Random Number Bot")
+def ranged_sequence(min_val, max_val, step=1):
+    if step == 0:
+        raise ValueError("Step cannot be 0.")
+    if (min_val < max_val and step < 0) or (min_val > max_val and step > 0):
+        raise ValueError("Step sign inconsistent with min/max.")
+    end = max_val + (1 if step > 0 else -1)
+    return list(range(min_val, end, step))
+
+def log_result(entry: dict, path: Path = LOG_PATH):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entry = {"ts": datetime.utcnow().isoformat() + "Z", **entry}
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+# Console interface
+def console_interface():
+    print("Random Number Bot (console)")
     while True:
         print("\nOptions:")
         print("1) Single random (default 1-100)")
         print("2) Multiple randoms")
-        print("3) Ranged randoms (generate numbers with step)")
-        print("4) Exit")
+        print("3) Ranged sequence")
+        print("4) Start GUI")
+        print("5) Start HTTP API server (in background)")
+        print("6) Exit")
         choice = input("Choose an option: ").strip()
 
-        if choice == "1":
-            print("Single random:", single_random())
-        elif choice == "2":
-            try:
+        try:
+            if choice == "1":
+                mn = int(input("Min (default 1): ").strip() or 1)
+                mx = int(input("Max (default 100): ").strip() or 100)
+                val = single_random(mn, mx)
+                print("Single random:", val)
+                log_result({"mode": "single", "min": mn, "max": mx, "result": val})
+            elif choice == "2":
                 c = int(input("Count: ").strip())
                 mn = int(input("Min (default 1): ").strip() or 1)
                 mx = int(input("Max (default 100): ").strip() or 100)
                 uniq = input("Unique? (y/N): ").strip().lower() == "y"
                 nums = multiple_random(c, mn, mx, unique=uniq)
                 print("Randoms:", nums)
-            except Exception as e:
-                print("Error:", e)
-        elif choice == "3":
-            try:
+                log_result({"mode": "multiple", "count": c, "min": mn, "max": mx, "unique": uniq, "result": nums})
+            elif choice == "3":
                 mn = int(input("Min: ").strip())
                 mx = int(input("Max: ").strip())
                 step = int(input("Step (default 1): ").strip() or 1)
-                if step == 0:
-                    raise ValueError("Step cannot be 0.")
-                nums = list(range(mn, mx+ (1 if step>0 else -1), step))
-                print("Generated sequence:", nums)
-            except Exception as e:
-                print("Error:", e)
-        elif choice == "4":
-            print("Goodbye.")
-            break
-        else:
-            print("Invalid choice.")
+                seq = ranged_sequence(mn, mx, step)
+                print("Sequence:", seq)
+                log_result({"mode": "range", "min": mn, "max": mx, "step": step, "result": seq})
+            elif choice == "4":
+                threading.Thread(target=start_gui, daemon=True).start()
+                print("GUI started in background.")
+            elif choice == "5":
+                threading.Thread(target=start_api, daemon=True).start()
+                print("API server starting in background (default http://127.0.0.1:8000).")
+            elif choice == "6":
+                print("Goodbye.")
+                break
+            else:
+                print("Invalid choice.")
+        except Exception as e:
+            print("Error:", e)
+
+# GUI
+def start_gui():
+    def generate_single():
+        try:
+            mn = int(entry_min.get() or 1)
+            mx = int(entry_max.get() or 100)
+            val = single_random(mn, mx)
+            txt_output.configure(state="normal")
+            txt_output.insert(tk.END, f"Single: {val}\n")
+            txt_output.configure(state="disabled")
+            log_result({"mode": "single_gui", "min": mn, "max": mx, "result": val})
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def generate_multiple():
+        try:
+            c = int(entry_count.get())
+            mn = int(entry_min.get() or 1)
+            mx = int(entry_max.get() or 100)
+            uniq = var_unique.get()
+            nums = multiple_random(c, mn, mx, unique=uniq)
+            txt_output.configure(state="normal")
+            txt_output.insert(tk.END, f"Multiple: {nums}\n")
+            txt_output.configure(state="disabled")
+            log_result({"mode": "multiple_gui", "count": c, "min": mn, "max": mx, "unique": uniq, "result": nums})
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def generate_range():
+        try:
+            mn = int(entry_min.get())
+            mx = int(entry_max.get())
+            step = int(entry_step.get() or 1)
+            seq = ranged_sequence(mn, mx, step)
+            txt_output.configure(state="normal")
+            txt_output.insert(tk.END, f"Range: {seq}\n")
+            txt_output.configure(state="disabled")
+            log_result({"mode": "range_gui", "min": mn, "max": mx, "step": step, "result": seq})
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    root = tk.Tk()
+    root.title("Random Number Bot — GUI")
+    root.geometry("700x500")
+
+    frm_inputs = tk.Frame(root)
+    frm_inputs.pack(padx=8, pady=6, anchor="nw")
+
+    tk.Label(frm_inputs, text="Min:").grid(row=0, column=0, sticky="e")
+    entry_min = tk.Entry(frm_inputs, width=10)
+    entry_min.grid(row=0, column=1, padx=4)
+    entry_min.insert(0, "1")
+
+    tk.Label(frm_inputs, text="Max:").grid(row=0, column=2, sticky="e")
+    entry_max = tk.Entry(frm_inputs, width=10)
+    entry_max.grid(row=0, column=3, padx=4)
+    entry_max.insert(0, "100")
+
+    tk.Label(frm_inputs, text="Count:").grid(row=1, column=0, sticky="e")
+    entry_count = tk.Entry(frm_inputs, width=10)
+    entry_count.grid(row=1, column=1, padx=4)
+    entry_count.insert(0, "5")
+
+    tk.Label(frm_inputs, text="Step:").grid(row=1, column=2, sticky="e")
+    entry_step = tk.Entry(frm_inputs, width=10)
+    entry_step.grid(row=1, column=3, padx=4)
+    entry_step.insert(0, "1")
+
+    var_unique = tk.BooleanVar(value=False)
+    chk_unique = tk.Checkbutton(frm_inputs, text="Unique", variable=var_unique)
+    chk_unique.grid(row=1, column=4, padx=6)
+
+    btn_single = tk.Button(frm_inputs, text="Generate Single", command=generate_single)
+    btn_single.grid(row=2, column=0, pady=6)
+
+    btn_multi = tk.Button(frm_inputs, text="Generate Multiple", command=generate_multiple)
+    btn_multi.grid(row=2, column=1, pady=6)
+
+    btn_range = tk.Button(frm_inputs, text="Generate Range", command=generate_range)
+    btn_range.grid(row=2, column=2, pady=6)
+
+    txt_output = scrolledtext.ScrolledText(root, wrap=tk.WORD, height=18, font=("Courier", 11))
+    txt_output.pack(fill="both", expand=True, padx=8, pady=6)
+    txt_output.configure(state="disabled")
+
+    root.mainloop()
+
+# HTTP API
+app = FastAPI(title="Random Number Bot API")
+
+class SingleRequest(BaseModel):
+    min: int = 1
+    max: int = 100
+
+class MultipleRequest(BaseModel):
+    count: int
+    min: int = 1
+    max: int = 100
+    unique: bool = False
+
+class RangeRequest(BaseModel):
+    min: int
+    max: int
+    step: int = 1
+
+@app.post("/single")
+def api_single(req: SingleRequest):
+    val = single_random(req.min, req.max)
+    log_result({"mode": "single_api", "min": req.min, "max": req.max, "result": val})
+    return {"result": val}
+
+@app.post("/multiple")
+def api_multiple(req: MultipleRequest):
+    nums = multiple_random(req.count, req.min, req.max, unique=req.unique)
+    log_result({"mode": "multiple_api", "count": req.count, "min": req.min, "max": req.max, "unique": req.unique, "result": nums})
+    return {"result": nums}
+
+@app.post("/range")
+def api_range(req: RangeRequest):
+    seq = ranged_sequence(req.min, req.max, req.step)
+    log_result({"mode": "range_api", "min": req.min, "max": req.max, "step": req.step, "result": seq})
+    return {"result": seq}
+
+def start_api():
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+
+# Entrypoint
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-console", action="store_true", help="Don't start console interface")
+    parser.add_argument("--start-gui", action="store_true", help="Start GUI immediately")
+    parser.add_argument("--start-api", action="store_true", help="Start API server immediately")
+    args = parser.parse_args()
+
+    if args.start_api:
+        threading.Thread(target=start_api, daemon=True).start()
+    if args.start_gui:
+        threading.Thread(target=start_gui, daemon=True).start()
+    if not args.no_console:
+        console_interface()
+    else:
+        print("Running headless. GUI/API threads may be running; press Ctrl+C to exit.")
+        try:
+            while True:
+                threading.Event().wait(3600)
+        except KeyboardInterrupt:
+            print("Exiting.")
 
 if __name__ == "__main__":
     main()
 
-
+                
