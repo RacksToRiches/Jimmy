@@ -1,0 +1,31 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+
+# Initialize driver
+driver = webdriver.Chrome()
+
+def like_thai_holistics_videos():
+    # 1. Go to the profile
+    driver.get("https://www.tiktok.com/@thaiholistics")
+    time.sleep(5) # Wait for page to load
+    
+    # 2. Click the first video
+    first_video = driver.find_element(By.XPATH, '//div[contains(@class, "DivVideoItemContainer")]')
+    first_video.click()
+    time.sleep(2)
+
+    # 3. Loop through videos and like
+    while True:
+        try:
+            # Click the Like button
+            like_button = driver.find_element(By.XPATH, '//span[@data-e2e="like-icon"]')
+            like_button.click()
+            
+            # Move to the next video (Down Arrow)
+            next_button = driver.find_element(By.XPATH, '//button[@data-e2e="arrow-right"]')
+            next_button.click()
+            time.sleep(3) # Anti-ban delay
+        except Exception as e:
+            print("Finished or encountered an error:", e)
+            break
