@@ -1,140 +1,94 @@
-import random
-import time
-import logging
-from seleniumbase import Driver
-import requests
+import pandas as pd
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def omnistical_delay(min_t=3.0, max_t=7.0):
-    """Randomized delay to mimic human behavior."""
-    delay = random.uniform(min_t, max_t)
-    logging.info(f"Delaying for {delay:.1f} seconds...")
-    time.sleep(delay)
-
-def upload_sequence(video_path, description):
-    driver = None
-    try:
-        logging.info("🌀 Awakening Kalki session...")
-        # UC mode + persistent profile for better stealth and session reuse
-        driver = Driver(uc=True, user_data_dir="./kalki_session", browser="chrome")
-        driver.set_window_size(1920, 1080)
-
-        driver.uc_open_with_reconnect("https://www.tiktok.com/upload", reconnect_time=8)
-        omnistical_delay(7, 12)
-
-        # Handle possible login redirect
-        if "login" in driver.current_url.lower():
-            logging.warning("Login required. Please log in manually in the opened browser window.")
-            driver.wait_for_element_present('input[type="file"]', timeout=180)  # Longer wait for manual login
-
-        # File upload
-        driver.wait_for_element_present('input[type="file"]', timeout=30)
-        driver.choose_file('input[type="file"]', video_path)
-        logging.info("Video payload delivered. Waiting for processing...")
-
-        # Wait for description box (indicates video is ready for editing)
-        driver.wait_for_element_visible('div[role="textbox"]', timeout=90)
-        omnistical_delay(8, 15)
-
-        # Description (with some randomization for less pattern detection)
-        full_desc = f"{description} #Kalki #DiMiThai #ML #Omnism #ThaiMusic2026 #Jaytdnd"
-        if random.random() > 0.7:
-            full_desc += " 🔥"
-
-        textbox_selector = 'div[role="textbox"]'
-        driver.uc_click(textbox_selector)
-
-        # Human-like typing
-        for char in full_desc:
-            driver.send_keys(textbox_selector, char)
-            time.sleep(random.uniform(0.05, 0.15))
-
-        omnistical_delay(5, 10)
-
-        # Scroll to bottom (sometimes helps with button visibility)
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        omnistical_delay(2, 4)
-
-        # Post button — critical improvement: wait for enabled state
-        post_btn_xpath = '//button[@data-e2e="post_video_button" and @aria-disabled="false"]'
-        driver.wait_for_element_clickable(post_btn_xpath, timeout=60)
-        driver.uc_click(post_btn_xpath)
-
-        logging.info(f"🔥 Deployment Successful: {description}")
-
-        # Post-upload human behavior
-        omnistical_delay(10, 15)
-        driver.get("https://www.tiktok.com/foryou")
-        time.sleep(random.randint(30, 90))
-
-    except Exception as e:
-        logging.error(f"❌ System failure in Kalki sequence: {e}")
-        if driver:
-            try:
-                driver.save_screenshot("upload_error.png")
-                logging.info("Screenshot saved to upload_error.png")
-            except:
-                pass
-    finally:
-        if driver:
-            driver.quit()
-
-
-def get_etherscan_balance(api_key, wallet_address, chain_id=1):
+def check_iowa_status(weight_g, thca_pct, d9_pct, is_inhalable):
     """
-    Fetches native token balance using Etherscan V2 API (multi-chain support).
+    Evaluates Iowa compliance for 2026.
     """
-    url = "https://api.etherscan.io/v2/api"
-    params = {
-        "chainid": chain_id,
-        "module": "account",
-        "action": "balance",
-        "address": wallet_address,
-        "tag": "latest",
-        "apikey": api_key or ""  # API key optional for low rate limits
+    # 1. Calculation
+    total_thc_pct = (thca_pct * 0.877) + d9_pct
+    total_thc_mg = weight_g * 1000 * (total_thc_pct / 100)
+
+    # 2. Logic Gates
+    if is_inhalable:
+        return "🛑 ILLEGAL: All inhalables (flower/vapes) are banned in Iowa (Code 204.14A)."
+    
+    if total_thc_pct > 0.3:
+        return f"🛑 ILLEGAL: {total_thc_pct:.2f}% Total THC exceeds the 0.3% cap."
+    
+    if total_thc_mg > 10:
+        return f"🛑 ILLEGAL: {total_thc_mg:.1f}mg THC exceeds the 10mg/package limit."
+
+    return f"✅ COMPLIANT: {total_thc_mg:.1f}mg total THC is within limits."
+
+# Test: The 6-gram Flower Scenario
+print(check_iowa_status(6.0, 20.0, 0.1, True))
+
+CREATE VIEW iowa_compliance_audit AS
+SELECT 
+    id, product_name,
+    ((thca_pct * 0.877) + d9_pct) AS total_thc_calculated,
+    CASE 
+        WHEN is_inhalable = 1 THEN 'BANNED_INHALABLE'
+        WHEN ((thca_pct * 0.877) + d9_pct) > 0.3 THEN 'EXCEEDS_CONCENTRATION'
+        WHEN (weight_g * 10 * ((thca_pct * 0.877) + d9_pct)) > 10 THEN 'EXCEEDS_DOSAGE'
+        ELSE 'LEGAL'
+    END AS compliance_label
+FROM hemp_inventory;
+
+import pandas as pd
+
+# 2026 Iowa Statutory Constants (HF 2605)
+IA_CONFIG = {
+    "max_total_thc_pct": 0.3,
+    "max_mg_per_serving": 4.0,
+    "max_mg_per_container": 10.0,
+    "allow_inhalables": False,
+    "conversion_factor": 0.877
+}
+
+def analyze_compliance(product_data):
+    """
+    Analyzes a product against IA 2026 standards.
+    Input: Dict with 'thca', 'd9', 'weight', 'servings', 'is_inhalable'
+    """
+    # 1. Formulaic conversion
+    total_thc_pct = (product_data['thca'] * IA_CONFIG['conversion_factor']) + product_data['d9']
+    total_mg_container = (product_data['weight'] * 10) * total_thc_pct
+    mg_per_serving = total_mg_container / product_data['servings']
+    
+    # 2. Risk Assessment Logic
+    violations = []
+    if product_data['is_inhalable'] and not IA_CONFIG['allow_inhalables']:
+        violations.append("CRIMINAL_VIO: Inhalable hemp is a Serious Misdemeanor (IA Code 204.14A)")
+    
+    if total_thc_pct > IA_CONFIG['max_total_thc_pct']:
+        violations.append(f"CONC_VIO: {total_thc_pct:.3f}% exceeds 0.3% limit")
+        
+    if total_mg_container > IA_CONFIG['max_mg_per_container']:
+        violations.append(f"DOSAGE_VIO: {total_mg_container:.2f}mg exceeds 10mg container limit")
+
+    return {
+        "status": "NON-COMPLIANT" if violations else "COMPLIANT",
+        "total_thc_mg": round(total_mg_container, 2),
+        "violations": violations
     }
 
-    try:
-        response = requests.get(url, params=params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
+# Evaluating 6 grams of THCA Flower
+product = {'thca': 20.0, 'd9': 0.1, 'weight': 6, 'servings': 1, 'is_inhalable': True}
+print(analyze_compliance(product))
 
-        if data.get('status') == '1':
-            balance_wei = int(data['result'])
-            balance_eth = balance_wei / 10**18
-            return f"✅ Balance on chain {chain_id}: {balance_eth:.6f} ETH"
-        else:
-            return f"❌ API Error: {data.get('message')} - {data.get('result', '')}"
-    except requests.exceptions.RequestException as e:
-        return f"❌ Connection Error: {e}"
-    except (KeyError, ValueError, TypeError) as e:
-        return f"❌ Parsing Error: {e}"
-
-
-def run_eternal_scheduler():
-    video_path = "./video.mp4"  # Update this if needed
-    api_key = "YOUR_ETHERSCAN_API_KEY"  # Replace with real key (or leave empty for demo)
-    wallet = "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe"  # Example
-
-    while True:
-        current_time = time.strftime("%H:%M")
-        logging.info(f"[{current_time}] Kalki Cycle Initiated.")
-
-        # Optional: check balance before upload (demo)
-        balance_info = get_etherscan_balance(api_key, wallet)
-        logging.info(balance_info)
-
-        # Upload with dynamic description
-        desc = f"Kalki frequency shift at {current_time}"
-        upload_sequence(video_path, desc)
-
-        # Randomized sleep ~45-75 minutes (avoids exact hourly pattern)
-        sleep_time = random.randint(2700, 4500)
-        logging.info(f"Dormant for {sleep_time // 60} minutes until next shift...")
-        time.sleep(sleep_time)
-
-
-if __name__ == "__main__":
-    run_eternal_scheduler()
+CREATE VIEW iowa_compliance_engine AS
+SELECT 
+    product_name,
+    weight_g,
+    -- Calculate Iowa's Total THC value
+    ((thca_pct * 0.877) + d9_pct) AS total_thc_pct,
+    -- Calculate total milligrams in the entire package
+    (weight_g * 10 * ((thca_pct * 0.877) + d9_pct)) AS package_mg_total,
+    CASE 
+        WHEN is_inhalable = TRUE THEN 'ILLEGAL: Banned Inhalable Form'
+        WHEN ((thca_pct * 0.877) + d9_pct) > 0.3 THEN 'ILLEGAL: Concentration High'
+        WHEN (weight_g * 10 * ((thca_pct * 0.877) + d9_pct)) > 10 THEN 'ILLEGAL: Dosage High'
+        ELSE 'COMPLIANT'
+    END AS compliance_status
+FROM inventory_table;
