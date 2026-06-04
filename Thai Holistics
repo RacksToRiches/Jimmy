@@ -1,31 +1,94 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import time
+import base64
+import os
+import plistlib
 
-# Initialize driver
-driver = webdriver.Chrome()
+# 1. Define the raw plist string
+plist_data = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadDescription</key>
+            <string>Configures Managed Domains</string>
+            <key>PayloadDisplayName</key>
+            <string>Domains</string>
+            <key>PayloadIdentifier</key>
+            <string>com.apple.domains.5329FCCB-D530-4080-B33C-A6437117CC50</string>
+            <key>PayloadType</key>
+            <string>com.apple.domains</string>
+            <key>PayloadUUID</key>
+            <string>5329FCCB-D530-4080-B33C-A6437117CC50</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+        </dict>
+        <dict>
+            <key>FullScreen</key>
+            <true/>
+            <key>Icon</key>
+            <data>
+            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
+            FurRTm0A=
+            </key>
+        </dict>
+    </array>
+</dict>
+</plist>
+"""
 
-def like_thai_holistics_videos():
-    # 1. Go to the profile
-    driver.get("https://www.tiktok.com/@thaiholistics")
-    time.sleep(5) # Wait for page to load
-    
-    # 2. Click the first video
-    first_video = driver.find_element(By.XPATH, '//div[contains(@class, "DivVideoItemContainer")]')
-    first_video.click()
-    time.sleep(2)
+# 2. Parse the plist architecture
+try:
+    plist_root = plistlib.loads(plist_data.encode("utf-8"))
 
-    # 3. Loop through videos and like
-    while True:
-        try:
-            # Click the Like button
-            like_button = driver.find_element(By.XPATH, '//span[@data-e2e="like-icon"]')
-            like_button.click()
-            
-            # Move to the next video (Down Arrow)
-            next_button = driver.find_element(By.XPATH, '//button[@data-e2e="arrow-right"]')
-            next_button.click()
-            time.sleep(3) # Anti-ban delay
-        except Exception as e:
-            print("Finished or encountered an error:", e)
-            break
+    # Extract the base64 binary block from the second dictionary element
+    payload_content = plist_root.get("PayloadContent", [])
+    if len(payload_content) > 1 and "Icon" in payload_content[1]:
+        raw_image_bytes = payload_content[1]["Icon"]
+
+        # 3. Output raw binary to an image file
+        output_filename = "decoded_icon.png"
+        with open(output_filename, "wb") as image_file:
+            image_file.write(raw_image_bytes)
+
+        print(
+            f"[Success] Extracted and decoded icon asset saved to: {os.path.abspath(output_filename)}"
+        )
+    else:
+        print("[Error] Failed to locate the 'Icon' data block inside the plist payload layout.")
+
+except Exception as error:
+    print(f"[Parsing Error] Failed to process plist data format: {error}")
