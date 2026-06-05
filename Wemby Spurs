@@ -1,0 +1,83 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+# --- Configuration Profiles ---
+PACKAGE_NAME = "com.thaiholistics.automation"
+VERSION = "1.0.0"
+MAINTAINER = "Jimmy Minh Tai Thai"
+TARGET_DIR = Path("./my_automation_package")
+
+# --- Payload Source Code ---
+# This defines the automation payload executed on the target environment.
+AUTOMATION_PAYLOAD = """#!/usr/bin/env python3
+import sys
+import os
+
+def run_matrix():
+    print("[*] Initializing automation runtime...")
+    # Add high-efficiency processing logic here
+    print(f"[*] Operating System: {sys.platform}")
+    print("[*] Initialization complete.")
+
+if __name__ == "__main__":
+    run_matrix()
+"""
+
+def build_deb_package():
+    print(f"[*] Commencing architecture assembly for {PACKAGE_NAME}...")
+    
+    # 1. Establish directory tree lines
+    debian_dir = TARGET_DIR / "DEBIAN"
+    bin_dir = TARGET_DIR / "usr" / "local" / "bin"
+    
+    debian_dir.mkdir(parents=True, exist_ok=True)
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 2. Inject control metadata instructions
+    control_content = f"""Package: {PACKAGE_NAME}
+Name: Core Automation Utility
+Version: {VERSION}
+Architecture: iphoneos-arm
+Description: High-efficiency Python automation network tool.
+Maintainer: {MAINTAINER}
+Author: {MAINTAINER}
+Depends: python3
+Section: Utilities
+"""
+    
+    with open(debian_dir / "control", "w", encoding="utf-8") as f:
+        f.write(control_content)
+        
+    # 3. Deploy payload binary script
+    script_path = bin_dir / "my_script.py"
+    with open(script_path, "w", encoding="utf-8") as f:
+        f.write(AUTOMATION_PAYLOAD)
+        
+    # 4. Enforce strict permissions profile
+    print("[*] Applying systems permission profile...")
+    os.chmod(script_path, 0o755)  # Read, write, execute for owner; read/execute for others
+    
+    # 5. Compile to Debian binary archive
+    print("[*] Invoking dpkg-deb compilation engine...")
+    try:
+        subprocess.run(
+            ["dpkg-deb", "--build", str(TARGET_DIR)], 
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        print(f"[+] Package compiled successfully: {TARGET_DIR}.deb")
+    except FileNotFoundError:
+        print("[-] Compilation Error: 'dpkg-deb' utility not found in current PATH environment.")
+        print("[!] Ensure you are executing this build step on a compatible Unix system architecture.")
+    except subprocess.CalledProcessError as e:
+        print(f"[-] Packaging failed: {e.stderr.decode('utf-8')}")
+
+if __name__ == "__main__":
+    build_deb_package()
+
+python3 build_package.py
+
+3. **Distribution:** The resulting output file (`my_automation_package.deb`) is ready to be transferred to your target Unix environment's package manager repository database.
