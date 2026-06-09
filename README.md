@@ -1,1 +1,1 @@
-# 369 0010110 3333 --.-.--.,-.,---...---...----....,,,,,,------?????????---------
+Transmission Recieved: 369 Error Complete, Knock Knock, who's there. On, on who, David and Richie anh this dick
